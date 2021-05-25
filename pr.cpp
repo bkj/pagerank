@@ -73,15 +73,15 @@ void run_app(Real* x) {
     Real* xlast = (Real*)malloc(n_nodes * sizeof(Real));
     
     Real init = 1.0 / n_nodes;
-    for(Int i = 0; i < n_nodes; i++) p[i] = init;
-    for(Int i = 0; i < n_nodes; i++) x[i] = init;
+    for(Int i = 0; i < n_nodes; i++) p[i]     = init;
+    for(Int i = 0; i < n_nodes; i++) x[i]     = init;
+    for(Int i = 0; i < n_nodes; i++) xlast[i] = init;
     
+    auto t1 = high_resolution_clock::now();
     for(Int it = 0; it < max_iter; it++) {
         printf("it=%d\n", it);
         
-        for(Int i = 0; i < n_nodes; i++) xlast[i] = x[i];
-        
-        #pragma omp parallel for schedule(dynamic)
+        #pragma omp parallel for
         for(Int dst = 0; dst < n_nodes; dst++) {
             Real acc = (1 - alpha) * p[dst];
             for(Int offset = indptr[dst]; offset < indptr[dst + 1]; offset++) {
@@ -103,8 +103,14 @@ void run_app(Real* x) {
         }
         
         if(done) break;
+        
+        Real* tmp_ptr = xlast;
+        xlast = x;
+        x     = tmp_ptr;
     }
-
+    auto elapsed = high_resolution_clock::now() - t1;
+    long long ms = duration_cast<microseconds>(elapsed).count();
+    std::cout << "elapsed=" << ms << std::endl;
 }
 
 int main(int n_args, char** argument_array) {

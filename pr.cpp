@@ -1,6 +1,3 @@
-
-
-
 #pragma GCC diagnostic ignored "-Wunused-result"
 
 #include <stdlib.h>
@@ -71,16 +68,16 @@ void load_data(std::string inpath) {
 void run_app(Real* x) {
     Real* p     = (Real*)malloc(n_nodes * sizeof(Real));
     Real* xlast = (Real*)malloc(n_nodes * sizeof(Real));
-    
+
     Real init = 1.0 / n_nodes;
     for(Int i = 0; i < n_nodes; i++) p[i]     = init;
     for(Int i = 0; i < n_nodes; i++) x[i]     = init;
     for(Int i = 0; i < n_nodes; i++) xlast[i] = init;
-    
+
     auto t1 = high_resolution_clock::now();
     for(Int it = 0; it < max_iter; it++) {
         printf("it=%d\n", it);
-        
+
         #pragma omp parallel for
         for(Int dst = 0; dst < n_nodes; dst++) {
             Real acc = (1 - alpha) * p[dst];
@@ -89,10 +86,10 @@ void run_app(Real* x) {
                 Real val = data[offset];
                 acc += alpha * xlast[src] * val;
             }
-            
+
             x[dst] = acc;
         }
-        
+
         bool done = true;
         for(Int i = 0; i < n_nodes; i++) {
             Real err = abs(x[i] - xlast[i]);
@@ -101,9 +98,8 @@ void run_app(Real* x) {
                 break;
             }
         }
-        
+
         if(done) break;
-        
         Real* tmp_ptr = xlast;
         xlast = x;
         x     = tmp_ptr;
@@ -125,25 +121,25 @@ int main(int n_args, char** argument_array) {
 
     n_nodes = n_rows;
     n_edges = n_nnz;
-    
+
     // ---------------- RUN ----------------
     auto t1 = high_resolution_clock::now();
-    
+
     x = (Real*)malloc(n_nodes * sizeof(Real));
     for(unsigned int run = 0; run < n_runs; run++)
         run_app(x);
-    
+
     auto elapsed = high_resolution_clock::now() - t1;
     long long ms = duration_cast<microseconds>(elapsed).count();
-    
+
     ms /= n_runs;
-    
+
     for(int i = 0; i < 40; i++) {
         printf("%f ", x[i]);
     }
     printf("\n");
-    
+
     std::cout << "elapsed=" << ms << std::endl;
-    
+
     return 0;
 }
